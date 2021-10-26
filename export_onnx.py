@@ -107,11 +107,11 @@ def compare_onnx_pth(args):
 if __name__ == "__main__":
     # exporter settings
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default='pretrained/random_ScreenCheck_20211022150654_31.pth', help="set model checkpoint path")
+    parser.add_argument('--model', type=str, default='pretrained/cls_random_ScreenCheck_20211024043129_989.pth', help="set model checkpoint path")
 
-    parser.add_argument('--image', type=str, default='test/20211018094229_3', help="image path")
-    parser.add_argument('--pth', type=str, default='pretrained/random_ScreenCheck_20211022150654_31.pth', help="set model checkpoint path")
-    parser.add_argument('--onnx', type=str, default='pretrained/random_ScreenCheck_20211022150654_31.onnx', help="set model checkpoint path")
+    parser.add_argument('--image', type=str, default='test/20211015175009_0', help="image path")
+    parser.add_argument('--pth', type=str, default='pretrained/cls_random_ScreenCheck_20211024043129_989.pth', help="set model checkpoint path")
+    parser.add_argument('--onnx', type=str, default='pretrained/cls_random_ScreenCheck_20211024043129_989.onnx', help="set model checkpoint path")
     args = parser.parse_args()
 
     # 导出ONNX模型

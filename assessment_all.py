@@ -17,6 +17,10 @@ import datetime
 import torch
 from torchvision import transforms
 import onnxruntime as ort
+import shutil
+import sys
+
+sys.setrecursionlimit(5000)
 
 
 def regression_(path="", model_pth=""):
@@ -85,7 +89,7 @@ def cls_(path="", model_pth=""):
     output_name = sess.get_outputs()[0].name
     pred_onnx = sess.run([output_name], {input_name: input_img.cpu().numpy()})[0]
     pred_id = pred_onnx.argsort()[-1:][::-1]
-    return pred_id
+    return pred_id.item()
 
 
 def write_excel_xls(path, sheet_name="", value=None):
@@ -155,7 +159,13 @@ class ImgTag(QtWidgets.QMainWindow):
         res_list.append("Label")
         for i in range(0, num_models):  # models
             res_list.append(models[i])
+            res_list.append("{} gap".format(models[i]))
+
         result_list.append(res_list)
+
+        error_path = os.path.join(self.model_path, "error_group")
+        if not os.path.exists(error_path):
+            os.mkdir(error_path)
 
         # 处理所有图片
         for i, img_group in enumerate(datasets):    # 每一组图片
@@ -169,21 +179,25 @@ class ImgTag(QtWidgets.QMainWindow):
                     pred = regression_(os.path.join(self.dataset_path, img_group),  # 一组图片
                                             os.path.join(self.model_path, model),  # 一个模型
                                             )
+
                 elif model.startswith("cls"):
                     pred = cls_(os.path.join(self.dataset_path, img_group),  # 一组图片
                                        os.path.join(self.model_path, model),  # 一个模型
                                        )
                 else:
                     print("Model Type Error")
+                if int(img_group.split("_")[-1]) != int(pred) and not os.path.exists(os.path.join(error_path, model, img_group + "----" + str(pred))):
+                    shutil.copytree(os.path.join(self.dataset_path, img_group), os.path.join(error_path, model, img_group + "----" + str(pred)))
+                # 设置状态栏 图片数量信息
+                text_info = "Model:{}  ;  img:{} - pred:{} .................... {} / {}".format(model, img_group, str(pred),  i + 1, str(len(datasets)))
+                self.status.setText(text_info)
+                self.status.repaint()
                 res_list.append(pred)   # 添加models预测值字段
+                res_list.append(abs(int(pred)-int(img_group.split("_")[-1])))    # 添加models预测值字段与真实标签的差距
 
             result_list.append(res_list)    # 将本组图片的处理结果存放到result_list中，供后续存入Excel
-            # 设置状态栏 图片数量信息
-            text_info = "img:{} - pred:{} .................... {} / {}".format(img_group, str(res_list[-1]), i+1, str(len(datasets)))
-            self.status.setText(text_info)
-            self.status.repaint()
             QtWidgets.QApplication.processEvents()
-            print("处理完 {} ---- {}".format(img_group, str(res_list[-1])))
+            print("{}.............{} / {}.............".format(img_group, i, len(datasets)))
         # 写入excel文件
         dest_path = os.path.join(self.model_path, datetime.datetime.now().strftime('%Y%m%d%H%M%S') + ".xls")
         write_excel_xls(dest_path, sheet_name="assess", value=result_list)
